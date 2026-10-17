@@ -23,20 +23,26 @@ jobs:
         run: npm install @capacitor/core @capacitor/cli @capacitor/ios
       - name: Add iOS platform
         run: npx cap add ios
-      - name: Fix deployment target
+      - name: Write Podfile and fix deployment target
         run: |
-          echo "=== Files found ==="
-          find ios -name "Podfile" -o -name "project.pbxproj"
-          echo "=== Current Podfile ==="
-          find ios -name "Podfile" -exec cat {} \;
-          # Force platform in every Podfile found
-          find ios -name "Podfile" -exec sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/" {} \;
-          # If no platform line exists, prepend one
-          find ios -name "Podfile" -exec sh -c 'grep -q "platform :ios" "$1" || echo "platform :ios, '"'"'13.0'"'"'" | cat - "$1" > /tmp/pf && mv /tmp/pf "$1"' _ {} \;
-          # Force deployment target in every pbxproj found
+          # Find the Podfile
+          PODFILE=$(find ios -name "Podfile" | head -1)
+          echo "Podfile at: $PODFILE"
+          # Write a fresh Podfile with iOS 13.0
+          cat > "$PODFILE" << 'PODFILE'
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '13.0'
+use_frameworks!
+
+target 'App' do
+  cap_native_projects
+end
+PODFILE
+          echo "=== New Podfile ==="
+          cat "$PODFILE"
+          # Fix deployment target in pbxproj
           find ios -name "project.pbxproj" -exec sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
-          echo "=== Fixed Podfile ==="
-          find ios -name "Podfile" -exec cat {} \;
       - name: Sync web assets
         run: npx cap sync ios
       - name: Enable background audio
