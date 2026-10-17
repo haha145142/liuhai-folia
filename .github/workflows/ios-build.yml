@@ -25,8 +25,12 @@ jobs:
         run: npx cap add ios
       - name: Set deployment target to 13.0
         run: |
-          find ios -name "project.pbxproj" -exec sed -i "" "s/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
-          find ios -name "project.pbxproj" -exec sed -i "" "s/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
+          echo "=== Before ==="
+          grep -r "IPHONEOS_DEPLOYMENT_TARGET" ios/ || echo "not found"
+          find ios -name "project.pbxproj" -exec sed -i "" -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
+          find ios -name "Podfile" -exec sed -i "" -E "s/platform :ios, '[0-9.]+'/platform :ios, '13.0'/g" {} \;
+          echo "=== After ==="
+          grep -r "IPHONEOS_DEPLOYMENT_TARGET" ios/ || echo "not found"
       - name: Sync web assets
         run: npx cap sync ios
       - name: Enable background audio
