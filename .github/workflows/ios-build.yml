@@ -25,15 +25,20 @@ jobs:
         run: npx cap add ios
       - name: Fix deployment target
         run: |
-          echo "=== Podfile before ==="
+          pwd
+          ls ios/App/App/
+          # Show current Podfile
+          echo "--- Podfile ---"
           cat ios/App/App/Podfile
-          echo "=== pbxproj deployment targets ==="
-          grep "IPHONEOS_DEPLOYMENT_TARGET" ios/App/App.xcodeproj/project.pbxproj | head -5
           # Force platform in Podfile
-          echo "platform :ios, '13.0'" | cat - ios/App/App/Podfile > /tmp/Podfile && mv /tmp/Podfile ios/App/App/Podfile
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/" ios/App/App/Podfile
+          # If no platform line exists, prepend one
+          if ! grep -q "platform :ios" ios/App/App/Podfile; then
+            echo "platform :ios, '13.0'" | cat - ios/App/App/Podfile > /tmp/pf && mv /tmp/pf ios/App/App/Podfile
+          fi
           # Force deployment target in pbxproj
-          find ios -name "project.pbxproj" -exec sed -i "" -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
-          echo "=== Podfile after ==="
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" ios/App/App.xcodeproj/project.pbxproj
+          echo "--- Fixed Podfile ---"
           cat ios/App/App/Podfile
       - name: Sync web assets
         run: npx cap sync ios
