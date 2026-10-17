@@ -23,14 +23,18 @@ jobs:
         run: npm install @capacitor/core @capacitor/cli @capacitor/ios
       - name: Add iOS platform
         run: npx cap add ios
-      - name: Set deployment target to 13.0
+      - name: Fix deployment target
         run: |
-          echo "=== Before ==="
-          grep -r "IPHONEOS_DEPLOYMENT_TARGET" ios/ || echo "not found"
+          echo "=== Podfile before ==="
+          cat ios/App/App/Podfile
+          echo "=== pbxproj deployment targets ==="
+          grep "IPHONEOS_DEPLOYMENT_TARGET" ios/App/App.xcodeproj/project.pbxproj | head -5
+          # Force platform in Podfile
+          echo "platform :ios, '13.0'" | cat - ios/App/App/Podfile > /tmp/Podfile && mv /tmp/Podfile ios/App/App/Podfile
+          # Force deployment target in pbxproj
           find ios -name "project.pbxproj" -exec sed -i "" -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
-          find ios -name "Podfile" -exec sed -i "" -E "s/platform :ios, '[0-9.]+'/platform :ios, '13.0'/g" {} \;
-          echo "=== After ==="
-          grep -r "IPHONEOS_DEPLOYMENT_TARGET" ios/ || echo "not found"
+          echo "=== Podfile after ==="
+          cat ios/App/App/Podfile
       - name: Sync web assets
         run: npx cap sync ios
       - name: Enable background audio
