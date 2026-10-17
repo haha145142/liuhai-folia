@@ -25,21 +25,18 @@ jobs:
         run: npx cap add ios
       - name: Fix deployment target
         run: |
-          pwd
-          ls ios/App/App/
-          # Show current Podfile
-          echo "--- Podfile ---"
-          cat ios/App/App/Podfile
-          # Force platform in Podfile
-          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/" ios/App/App/Podfile
+          echo "=== Files found ==="
+          find ios -name "Podfile" -o -name "project.pbxproj"
+          echo "=== Current Podfile ==="
+          find ios -name "Podfile" -exec cat {} \;
+          # Force platform in every Podfile found
+          find ios -name "Podfile" -exec sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/" {} \;
           # If no platform line exists, prepend one
-          if ! grep -q "platform :ios" ios/App/App/Podfile; then
-            echo "platform :ios, '13.0'" | cat - ios/App/App/Podfile > /tmp/pf && mv /tmp/pf ios/App/App/Podfile
-          fi
-          # Force deployment target in pbxproj
-          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" ios/App/App.xcodeproj/project.pbxproj
-          echo "--- Fixed Podfile ---"
-          cat ios/App/App/Podfile
+          find ios -name "Podfile" -exec sh -c 'grep -q "platform :ios" "$1" || echo "platform :ios, '"'"'13.0'"'"'" | cat - "$1" > /tmp/pf && mv /tmp/pf "$1"' _ {} \;
+          # Force deployment target in every pbxproj found
+          find ios -name "project.pbxproj" -exec sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 13.0/g" {} \;
+          echo "=== Fixed Podfile ==="
+          find ios -name "Podfile" -exec cat {} \;
       - name: Sync web assets
         run: npx cap sync ios
       - name: Enable background audio
